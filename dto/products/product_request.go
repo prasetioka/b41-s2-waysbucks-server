@@ -1,13 +1,15 @@
-package productdto
+package productsdto
 
 type CreateProductRequest struct {
-	Title    string               `json:"title" form:"title" validate:"required"`
-	Price    int                  `json:"price" form:"price" validate:"required"`
-	Image    string               `json:"image" form:"image" validate:"required"`
+	Title string `gorm:"type: varchar(255)" json:"title"`
+	Price int    `gorm:"type: int" json:"email"`
+	Image string `gorm:"type: varchar(255)" json:"image"`
+	Qty   int    `gorm:"type: int" json:"qty"`
 }
 
 type UpdateProductRequest struct {
-	Title    string               `json:"title" form:"title" gorm:"type: varchar(255)"`
-	Price    int                  `json:"price" form:"price" gorm:"type: int"`
-	Image    string               `json:"image" form:"image" gorm:"type: varchar(255)"`
+	Title string `gorm:"type: varchar(255)" json:"title"`
+	Price int    `gorm:"type: int" json:"email"`
+	Image string `gorm:"type: varchar(255)" json:"image"`
+	Qty   int    `gorm:"type: int" json:"qty"`
 }

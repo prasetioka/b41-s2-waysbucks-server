@@ -1,15 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
+	"net/http"
+	"strconv"
 	dto "waysbucks-api/dto/result"
 	usersdto "waysbucks-api/dto/users"
 	"waysbucks-api/models"
 	"waysbucks-api/repositories"
-	"encoding/json"
-	"net/http"
-	"strconv"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 )
 
@@ -53,55 +52,27 @@ func (h *handlerUser) GetUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (h *handlerUser) CreateUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	request := new(usersdto.CreateUserRequest)
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	validation := validator.New()
-	err := validation.Struct(request)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	user := models.User{
-		Name:     request.Name,
-		Email:    request.Email,
-		Password: request.Password,
-	}
-
-	data, err := h.UserRepository.CreateUser(user)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
-		json.NewEncoder(w).Encode(response)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Status: "success", Data: convertResponse(data)}
-	json.NewEncoder(w).Encode(response)
-}
-
 func (h *handlerUser) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	request := new(usersdto.UpdateUserRequest)
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
-		json.NewEncoder(w).Encode(response)
-		return
-	}
+	// request := new(usersdto.UpdateUserRequest)
 
+	dataContext := r.Context().Value("dataFile")
+	filename := dataContext.(string)
+
+  	request := usersdto.UpdateUserRequest{
+		Name:  r.FormValue("fullname"),
+		Email: r.FormValue("email"),
+		Password: r.FormValue("password"),
+	}
+	
+	// if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+	// 	json.NewEncoder(w).Encode(response)
+	// 	return
+	// }
+	
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 	user, err := h.UserRepository.GetUser(int(id))
 	if err != nil {
@@ -121,6 +92,10 @@ func (h *handlerUser) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	if request.Password != "" {
 		user.Password = request.Password
+	}
+
+	if filename != "false" {
+		user.Image = filename
 	}
 
 	data, err := h.UserRepository.UpdateUser(user)
@@ -163,9 +138,9 @@ func (h *handlerUser) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 func convertResponse(u models.User) usersdto.UserResponse {
 	return usersdto.UserResponse{
-		ID:       u.ID,
 		Name:     u.Name,
 		Email:    u.Email,
 		Password: u.Password,
+		Image:    u.Image,
 	}
 }

@@ -1,8 +1,8 @@
-package productdto
+package productsdto
 
 type ProductResponse struct {
-	Title    string               `json:"title" form:"title" gorm:"type: varchar(255)"`
-	Price    int                  `json:"price" form:"price" gorm:"type: int"`
-	Image    string               `json:"image" form:"image" gorm:"type: varchar(255)"`
-	Qty      int                  `json:"qty" form:"qty"`
+	Title string `json:"title"`
+	Price int `json:"price"`
+	Image string `json:"image"`
+	Qty   int `json:"qty"`
 }

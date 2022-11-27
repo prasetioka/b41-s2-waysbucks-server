@@ -1,17 +1,17 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"time"
 	authdto "waysbucks-api/dto/auth"
 	dto "waysbucks-api/dto/result"
 	"waysbucks-api/models"
 	"waysbucks-api/pkg/bcrypt"
 	jwtToken "waysbucks-api/pkg/jwt"
 	"waysbucks-api/repositories"
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
@@ -27,6 +27,10 @@ func HandlerAuth(AuthRepository repositories.AuthRepository) *handlerAuth {
 
 func (h *handlerAuth) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	// Get dataFile from midleware and store to filename variable here ...
+	// dataContex := r.Context().Value("dataFile") // add this code
+	// filename := dataContex.(string)             // add this code
 
 	request := new(authdto.RegisterRequest)
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -59,7 +63,8 @@ func (h *handlerAuth) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	registerResponse := authdto.RegisterResponse{
-		Name:     user.Name,
+		Name:  user.Name,
+		Email: user.Email,
 	}
 
 	_, err = h.AuthRepository.Register(user)
@@ -113,6 +118,7 @@ func (h *handlerAuth) Login(w http.ResponseWriter, r *http.Request) {
 	//generate token
 	claims := jwt.MapClaims{}
 	claims["id"] = user.ID
+	claims["role"] = user.Role
 	claims["exp"] = time.Now().Add(time.Hour * 2).Unix() // 2 jam expired
 
 	token, errGenerateToken := jwtToken.GenerateToken(&claims)
@@ -123,9 +129,9 @@ func (h *handlerAuth) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	loginResponse := authdto.LoginResponse{
-		Name:     user.Name,
-		Email:    user.Email,
-		Token:    token,
+		Name:  user.Name,
+		Email: user.Email,
+		Token: token,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

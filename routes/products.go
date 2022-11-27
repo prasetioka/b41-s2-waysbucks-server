@@ -2,6 +2,7 @@ package routes
 
 import (
 	"waysbucks-api/handlers"
+	"waysbucks-api/pkg/middleware"
 	"waysbucks-api/pkg/mysql"
 	"waysbucks-api/repositories"
 
@@ -9,12 +10,12 @@ import (
 )
 
 func ProductRoutes(r *mux.Router) {
-	ProductRepository := repositories.RepositoryProduct(mysql.DB)
-	h := handlers.HandlerProduct(ProductRepository)
+	productRepository := repositories.RepositoryProduct(mysql.DB)
+	h := handlers.HandlerProduct(productRepository)
 
 	r.HandleFunc("/products", h.FindProducts).Methods("GET")
-	// r.HandleFunc("/user/{id}", h.GetUser).Methods("GET")
-	// r.HandleFunc("/user", h.CreateUser).Methods("POST")
-	// r.HandleFunc("/user/{id}", h.UpdateUser).Methods("PATCH")
-	// r.HandleFunc("/user/{id}", h.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/product/{id}", h.GetProduct).Methods("GET")
+	r.HandleFunc("/product", middleware.Auth(middleware.UploadFile(h.CreateProduct))).Methods("POST")
+	r.HandleFunc("/product/{id}", middleware.Auth(middleware.UploadFile(h.UpdateProduct))).Methods("PATCH")
+	r.HandleFunc("/product/{id}", middleware.Auth(h.DeleteProduct)).Methods("DELETE")
 }
