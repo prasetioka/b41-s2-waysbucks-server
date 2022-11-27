@@ -133,9 +133,9 @@ func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 
 	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
 	userRole := userInfo["role"]
-	userID := int(userInfo["id"].(float64))
+	// userID := int(userInfo["id"].(float64))
 
-	if userID != id && userRole != "admin" {
+	if userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
 		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
 		json.NewEncoder(w).Encode(response)
