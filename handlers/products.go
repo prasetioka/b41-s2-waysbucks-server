@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -41,7 +42,7 @@ func (h *handlerProduct) FindProducts(w http.ResponseWriter, r *http.Request) {
 	for i, p := range products {
 		products[i].Image = os.Getenv("PATH_FILE") + p.Image
 	}
-
+	
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: products}
 	json.NewEncoder(w).Encode(response)
@@ -121,6 +122,9 @@ func (h *handlerProduct) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	product, _ = h.ProductRepository.GetProduct(product.ID)
 
+	product.Image = os.Getenv("PATH_FILE") + product.Image
+	fmt.Println(product.Image)
+
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: product}
 	json.NewEncoder(w).Encode(response)
@@ -141,16 +145,16 @@ func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
-	
+
 	dataContex := r.Context().Value("dataFile") // add this code
-	filename := dataContex.(string) // add this code
+	filename := dataContex.(string)             // add this code
 
 	price, _ := strconv.Atoi(r.FormValue("price"))
 	qty, _ := strconv.Atoi(r.FormValue("qty"))
 	request := productsdto.UpdateProductRequest{
-		Title:      r.FormValue("title"),
-		Price:      price,
-		Qty:        qty,
+		Title: r.FormValue("title"),
+		Price: price,
+		Qty:   qty,
 	}
 
 	validation := validator.New()
@@ -162,7 +166,7 @@ func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	product, _ := h.ProductRepository.GetProduct(id)
-	
+
 	if request.Title != "" {
 		product.Title = request.Title
 	}
@@ -174,7 +178,7 @@ func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	if request.Qty != 0 {
 		product.Qty = request.Qty
 	}
-	
+
 	if filename != "false" {
 		product.Image = filename
 	}
@@ -186,6 +190,9 @@ func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	product.Image = os.Getenv("PATH_FILE") + product.Image
+	fmt.Println(product.Image)
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: product}
@@ -222,12 +229,8 @@ func (h *handlerProduct) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := models.Product{
-		ID: product.ID,
-	}
-
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Status: "success", Data: convertResponseProduct(data)}
+	response := dto.SuccessResult{Status: "Product delete success!", Data: product.ID}
 	json.NewEncoder(w).Encode(response)
 
 }

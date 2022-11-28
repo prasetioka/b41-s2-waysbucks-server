@@ -9,6 +9,7 @@ import (
 	"waysbucks-api/models"
 	"waysbucks-api/repositories"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 )
 
@@ -22,6 +23,16 @@ func HandlerUser(UserRepository repositories.UserRepository) *handlerUser {
 
 func (h *handlerUser) FindUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userRole := userInfo["role"]
+
+	if userRole != "admin" {
+		w.WriteHeader(http.StatusUnauthorized)
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "Can't find user!"}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	users, err := h.UserRepository.FindUsers()
 	if err != nil {
@@ -39,6 +50,17 @@ func (h *handlerUser) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userRole := userInfo["role"]
+	userID := int(userInfo["id"].(float64))
+
+	if userID != id && userRole != "admin" {
+		w.WriteHeader(http.StatusUnauthorized)
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "Please login first!"}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	user, err := h.UserRepository.GetUser(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -48,32 +70,35 @@ func (h *handlerUser) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Status: "success", Data: user}
+	response := dto.SuccessResult{Status: "success", Data: convertResponse(user)}
 	json.NewEncoder(w).Encode(response)
 }
 
 func (h *handlerUser) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// request := new(usersdto.UpdateUserRequest)
+	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userRole := userInfo["role"]
+	userID := int(userInfo["id"].(float64))
+
+	if userID != id && userRole != "admin" {
+		w.WriteHeader(http.StatusUnauthorized)
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "Can't update user!"}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	dataContext := r.Context().Value("dataFile")
 	filename := dataContext.(string)
 
-  	request := usersdto.UpdateUserRequest{
-		Name:  r.FormValue("fullname"),
-		Email: r.FormValue("email"),
+	request := usersdto.UpdateUserRequest{
+		Name:     r.FormValue("fullname"),
+		Email:    r.FormValue("email"),
 		Password: r.FormValue("password"),
 	}
-	
-	// if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
-	// 	json.NewEncoder(w).Encode(response)
-	// 	return
-	// }
-	
-	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+
 	user, err := h.UserRepository.GetUser(int(id))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -115,6 +140,18 @@ func (h *handlerUser) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	userRole := userInfo["role"]
+	userID := int(userInfo["id"].(float64))
+
+	if userID != id && userRole != "admin" {
+		w.WriteHeader(http.StatusUnauthorized)
+		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "Can't delete user!"}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	user, err := h.UserRepository.GetUser(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -123,7 +160,7 @@ func (h *handlerUser) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := h.UserRepository.DeleteUser(user)
+	_, err = h.UserRepository.DeleteUser(user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
@@ -132,7 +169,7 @@ func (h *handlerUser) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Status: "success", Data: convertResponse(data)}
+	response := dto.DeleteResult{Message: "Delete user success!"}
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -140,7 +177,6 @@ func convertResponse(u models.User) usersdto.UserResponse {
 	return usersdto.UserResponse{
 		Name:     u.Name,
 		Email:    u.Email,
-		Password: u.Password,
 		Image:    u.Image,
 	}
 }

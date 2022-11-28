@@ -121,6 +121,8 @@ func (h *handlerTopping) CreateTopping(w http.ResponseWriter, r *http.Request) {
 
 	topping, _ = h.ToppingRepository.GetTopping(topping.ID)
 
+	topping.Image = os.Getenv("PATH_FILE") + topping.Image
+
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: topping}
 	json.NewEncoder(w).Encode(response)
@@ -187,6 +189,8 @@ func (h *handlerTopping) UpdateTopping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	topping.Image = os.Getenv("PATH_FILE") + topping.Image
+
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: topping}
 	json.NewEncoder(w).Encode(response)
@@ -222,12 +226,8 @@ func (h *handlerTopping) DeleteTopping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := models.Topping{
-		ID: topping.ID,
-	}
-
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Status: "success", Data: convertResponseTopping(data)}
+	response := dto.SuccessResult{Status: "Delete topping success!", Data: topping.ID}
 	json.NewEncoder(w).Encode(response)
 
 }

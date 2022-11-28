@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	// "fmt"
 	"net/http"
 	"strconv"
 	orderdto "waysbucks-api/dto/order"
@@ -70,7 +69,6 @@ func (h *handlerOrder) AddOrder(w http.ResponseWriter, r *http.Request) {
 
 	validation := validator.New()
 	err := validation.Struct(request)
-
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: "Validator Error"}
@@ -92,8 +90,6 @@ func (h *handlerOrder) AddOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	toppings, err := h.OrderRepository.GetToppingOrder(request.ToppingID)
-
-	// fmt.Println(topings)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -156,7 +152,3 @@ func (h *handlerOrder) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	response := dto.SuccessResult{Status: "success", Data: data}
 	json.NewEncoder(w).Encode(response)
 }
-
-
-
-

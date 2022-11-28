@@ -16,7 +16,7 @@ type OrderResponse struct {
 	Qty       int `json:"qty"`
 	Price     int `json:"price"`
 	ProductID int `json:"product_id"`
-	TopingID  int `json:"toping_id"`
+	ToppingID  int `json:"topping_id"`
 	BuyerID   int `json:"buyer_id"`
 }
 

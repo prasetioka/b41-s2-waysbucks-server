@@ -9,3 +9,7 @@ type ErrorResult struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
+
+type DeleteResult struct {
+	Message string `json:"message"`
+}
