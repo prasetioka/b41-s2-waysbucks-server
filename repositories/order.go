@@ -11,7 +11,7 @@ type OrderRepository interface {
 	GetOrder(ID int) (models.Order, error)
 	FindOrders() ([]models.Order, error)
 	DeleteOrder(order models.Order) (models.Order, error)
-	// UpdateOrder(order models.Order) (models.Order, error)
+	UpdateOrder(order models.Order) (models.Order, error)
 	GetProductOrder(ID int) (models.Product, error)
 	GetToppingOrder(ID []int) ([]models.Topping, error)
 }
@@ -42,10 +42,10 @@ func (r *repository) DeleteOrder(order models.Order) (models.Order, error) {
 	return order, err
 }
 
-// func (r *repository) UpdateOrder(order models.Order) (models.Order, error){
-// 	err := r.db.Save(&order).Error
-// 	return order, err
-// }
+func (r *repository) UpdateOrder(order models.Order) (models.Order, error){
+	err := r.db.Preload("Product").Preload("Topping").Preload("Buyer").Save(&order).Error
+	return order, err
+}
 
 func (r *repository) GetProductOrder(ID int) (models.Product, error) {
 	var product models.Product
