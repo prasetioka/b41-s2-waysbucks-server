@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 	"net/http"
 	"strconv"
 	dto "waysbucks-api/dto/result"
@@ -67,10 +68,12 @@ func (h *handlerTransaction) CreateTransaction(w http.ResponseWriter, r *http.Re
 		Name:	request.Name,
 		Email: request.Email,
 		Phone: request.Phone,
-		PosCode: request.PosCode,
 		Address: request.Address,
+		BuyerID: userID,
+		Order: orders,
 		Total:     Total,
 		Status: "Waiting",
+		CreateAt: time.Now(),
 	}
 
 	transaction, err := h.TransactionRepository.CreateTransaction(dataTransaction)
@@ -82,19 +85,20 @@ func (h *handlerTransaction) CreateTransaction(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	dataTransactions := models.Transaction{
-		ID: transaction.ID,
-		Name:	request.Name,
-		Email: request.Email,
-		Phone: request.Phone,
-		PosCode: request.PosCode,
-		Address: request.Address,
-		Total:     Total,
-		Order: orders,
-		Status: "Waiting",
-	}
+	trans, _ := h.TransactionRepository.GetTransaction(transaction.ID)
 
-	// transactions, _ := h.TransactionRepository.GetTransaction(transaction.ID)
+	dataTransactions := models.Transaction{
+		ID: 			trans.ID,
+		Name:			request.Name,
+		Email: 		request.Email,
+		Phone: 		request.Phone,
+		Address: 	request.Address,
+		Order: 		orders,
+		Total:    Total,
+		BuyerID: 	trans.BuyerID,
+		Buyer: 		trans.Buyer,
+		Status: 	"Waiting",
+	}
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: dataTransactions}
@@ -188,11 +192,16 @@ func (h *handlerTransaction) UpdateTransaction(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	request := transactiondto.MyTransaction{
-		Status: r.FormValue("status"),
-	}
+	request := new(transactiondto.StatusTransaction)
 
 	fmt.Println(request)
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	validation := validator.New()
 	err := validation.Struct(request)
@@ -206,8 +215,6 @@ func (h *handlerTransaction) UpdateTransaction(w http.ResponseWriter, r *http.Re
 
 	transaction.Status = request.Status
 
-	fmt.Println(request.Status)
-
 	_, err = h.TransactionRepository.UpdateTransaction(transaction)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -215,9 +222,39 @@ func (h *handlerTransaction) UpdateTransaction(w http.ResponseWriter, r *http.Re
 		json.NewEncoder(w).Encode(response)
 		return
 	}
-	transactions, _ := h.TransactionRepository.GetTransaction(id)
+
+	trans, err := h.TransactionRepository.GetTransaction(transaction.ID)
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	order, err := h.TransactionRepository.GetOrderByID(trans.BuyerID)
+		if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	dataTransactions := models.Transaction{
+		ID: 			trans.ID,
+		Name:			trans.Name,
+		Email: 		trans.Email,
+		Phone: 		trans.Phone,
+		Address: 	trans.Address,
+		Order: 		order,
+		Total:    trans.Total,
+		BuyerID: 	trans.BuyerID,
+		Buyer: 		trans.Buyer,
+		Status: 	trans.Status,
+	}
+
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Status: "success", Data: transactions}
+	response := dto.SuccessResult{Status: "success", Data: dataTransactions}
 	json.NewEncoder(w).Encode(response)	
 }
 
@@ -226,8 +263,7 @@ func (h *handlerTransaction) GetTransaction(w http.ResponseWriter, r *http.Reque
 
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
-	
-	transaction, err := h.TransactionRepository.GetTransaction(id)
+	trans, err := h.TransactionRepository.GetTransaction(id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -235,7 +271,22 @@ func (h *handlerTransaction) GetTransaction(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	order, err := h.TransactionRepository.GetOrderByID(trans.BuyerID)
+
+	dataTransactions := models.Transaction{
+		ID: 			trans.ID,
+		Name:			trans.Name,
+		Email: 		trans.Email,
+		Phone: 		trans.Phone,
+		Address: 	trans.Address,
+		Order: 		order,
+		Total:    trans.Total,
+		BuyerID: 	trans.BuyerID,
+		Buyer: 		trans.Buyer,
+		Status: 	trans.Status,
+	}
+
 	w.WriteHeader(http.StatusOK)
-	response := dto.SuccessResult{Status: "success", Data: transaction}
+	response := dto.SuccessResult{Status: "success", Data: dataTransactions}
 	json.NewEncoder(w).Encode(response)
 }

@@ -21,6 +21,6 @@ type TransactionResponse struct {
 	Total   int      `json:"total" gorm:"type : int"`
 }
 
-type MyTransaction struct {
+type StatusTransaction struct {
 	Status string `json:"status" gorm:"type: varchar(255)"`
 }
