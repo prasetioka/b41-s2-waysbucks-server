@@ -2,10 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
-	"time"
 	"net/http"
 	"strconv"
+	"time"
 	dto "waysbucks-api/dto/result"
 	transactiondto "waysbucks-api/dto/transaction"
 	"waysbucks-api/models"
@@ -28,6 +27,7 @@ func (h *handlerTransaction) CreateTransaction(w http.ResponseWriter, r *http.Re
 	w.Header().Set("content-type", "application/json")
 
 	request := new(transactiondto.TransactionRequest)
+
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: "cek dto"}
@@ -49,7 +49,6 @@ func (h *handlerTransaction) CreateTransaction(w http.ResponseWriter, r *http.Re
 	userID := int(userInfo["id"].(float64))
 
 	orders, err := h.TransactionRepository.GetOrderByID(userID)
-	
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -60,19 +59,18 @@ func (h *handlerTransaction) CreateTransaction(w http.ResponseWriter, r *http.Re
 
 	var Total = 0
 	for _, i := range orders {
-		Total += i.Price
+		Total += i.Total
 	}
 
-
 	dataTransaction := models.Transaction{
-		Name:	request.Name,
-		Email: request.Email,
-		Phone: request.Phone,
-		Address: request.Address,
-		BuyerID: userID,
-		Order: orders,
-		Total:     Total,
-		Status: "Waiting",
+		Name:     request.Name,
+		Email:    request.Email,
+		Phone:    request.Phone,
+		Address:  request.Address,
+		BuyerID:  userID,
+		Order:    orders,
+		Total:    Total,
+		Status:   "Waiting",
 		CreateAt: time.Now(),
 	}
 
@@ -88,16 +86,16 @@ func (h *handlerTransaction) CreateTransaction(w http.ResponseWriter, r *http.Re
 	trans, _ := h.TransactionRepository.GetTransaction(transaction.ID)
 
 	dataTransactions := models.Transaction{
-		ID: 			trans.ID,
-		Name:			request.Name,
-		Email: 		request.Email,
-		Phone: 		request.Phone,
-		Address: 	request.Address,
-		Order: 		orders,
-		Total:    Total,
-		BuyerID: 	trans.BuyerID,
-		Buyer: 		trans.Buyer,
-		Status: 	"Waiting",
+		ID:      trans.ID,
+		Name:    request.Name,
+		Email:   request.Email,
+		Phone:   request.Phone,
+		Address: request.Address,
+		Order:   orders,
+		Total:   Total,
+		BuyerID: trans.BuyerID,
+		Buyer:   trans.Buyer,
+		Status:  "Waiting",
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -117,7 +115,9 @@ func (h *handlerTransaction) FindTransaction(w http.ResponseWriter, r *http.Requ
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
 	transaction, err := h.TransactionRepository.FindTransaction()
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -136,6 +136,7 @@ func (h *handlerTransaction) DeleteTransaction(w http.ResponseWriter, r *http.Re
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
 	transaction, err := h.TransactionRepository.GetTransaction(id)
+
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -144,6 +145,7 @@ func (h *handlerTransaction) DeleteTransaction(w http.ResponseWriter, r *http.Re
 	}
 
 	data, err := h.TransactionRepository.DeleteTransaction(transaction)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
@@ -152,6 +154,7 @@ func (h *handlerTransaction) DeleteTransaction(w http.ResponseWriter, r *http.Re
 	}
 
 	dataDelete := data.ID
+
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: dataDelete}
 	json.NewEncoder(w).Encode(response)
@@ -164,6 +167,7 @@ func (h *handlerTransaction) GetOrderByID(w http.ResponseWriter, r *http.Request
 	userID := int(userInfo["id"].(float64))
 
 	orders, err := h.TransactionRepository.GetOrderByID(userID)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -184,7 +188,6 @@ func (h *handlerTransaction) UpdateTransaction(w http.ResponseWriter, r *http.Re
 	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
 	userRole := userInfo["role"]
 
-
 	if userRole != "admin" {
 		w.WriteHeader(http.StatusUnauthorized)
 		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "You're not admin"}
@@ -193,8 +196,6 @@ func (h *handlerTransaction) UpdateTransaction(w http.ResponseWriter, r *http.Re
 	}
 
 	request := new(transactiondto.StatusTransaction)
-
-	fmt.Println(request)
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -205,17 +206,20 @@ func (h *handlerTransaction) UpdateTransaction(w http.ResponseWriter, r *http.Re
 
 	validation := validator.New()
 	err := validation.Struct(request)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
 	transaction, _ := h.TransactionRepository.GetTransaction(id)
 
 	transaction.Status = request.Status
 
 	_, err = h.TransactionRepository.UpdateTransaction(transaction)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
@@ -233,7 +237,8 @@ func (h *handlerTransaction) UpdateTransaction(w http.ResponseWriter, r *http.Re
 	}
 
 	order, err := h.TransactionRepository.GetOrderByID(trans.BuyerID)
-		if err != nil {
+
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
 		json.NewEncoder(w).Encode(response)
@@ -241,21 +246,21 @@ func (h *handlerTransaction) UpdateTransaction(w http.ResponseWriter, r *http.Re
 	}
 
 	dataTransactions := models.Transaction{
-		ID: 			trans.ID,
-		Name:			trans.Name,
-		Email: 		trans.Email,
-		Phone: 		trans.Phone,
-		Address: 	trans.Address,
-		Order: 		order,
-		Total:    trans.Total,
-		BuyerID: 	trans.BuyerID,
-		Buyer: 		trans.Buyer,
-		Status: 	trans.Status,
+		ID:      trans.ID,
+		Name:    trans.Name,
+		Email:   trans.Email,
+		Phone:   trans.Phone,
+		Address: trans.Address,
+		Order:   order,
+		Total:   trans.Total,
+		BuyerID: trans.BuyerID,
+		Buyer:   trans.Buyer,
+		Status:  trans.Status,
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: dataTransactions}
-	json.NewEncoder(w).Encode(response)	
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *handlerTransaction) GetTransaction(w http.ResponseWriter, r *http.Request) {
@@ -264,6 +269,7 @@ func (h *handlerTransaction) GetTransaction(w http.ResponseWriter, r *http.Reque
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
 	trans, err := h.TransactionRepository.GetTransaction(id)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -274,16 +280,16 @@ func (h *handlerTransaction) GetTransaction(w http.ResponseWriter, r *http.Reque
 	order, err := h.TransactionRepository.GetOrderByID(trans.BuyerID)
 
 	dataTransactions := models.Transaction{
-		ID: 			trans.ID,
-		Name:			trans.Name,
-		Email: 		trans.Email,
-		Phone: 		trans.Phone,
-		Address: 	trans.Address,
-		Order: 		order,
-		Total:    trans.Total,
-		BuyerID: 	trans.BuyerID,
-		Buyer: 		trans.Buyer,
-		Status: 	trans.Status,
+		ID:      trans.ID,
+		Name:    trans.Name,
+		Email:   trans.Email,
+		Phone:   trans.Phone,
+		Address: trans.Address,
+		Order:   order,
+		Total:   trans.Total,
+		BuyerID: trans.BuyerID,
+		Buyer:   trans.Buyer,
+		Status:  trans.Status,
 	}
 
 	w.WriteHeader(http.StatusOK)

@@ -69,6 +69,7 @@ func (h *handlerOrder) AddOrder(w http.ResponseWriter, r *http.Request) {
 
 	validation := validator.New()
 	err := validation.Struct(request)
+
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: "Validator Error"}
@@ -79,8 +80,7 @@ func (h *handlerOrder) AddOrder(w http.ResponseWriter, r *http.Request) {
 	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
 	buyerID := int(userInfo["id"].(float64))
 
-	id, _ := strconv.Atoi(mux.Vars(r)["id"])
-	product, err := h.OrderRepository.GetProductOrder(id)
+	product, err := h.OrderRepository.GetProductOrder(request.ProductID)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -102,14 +102,15 @@ func (h *handlerOrder) AddOrder(w http.ResponseWriter, r *http.Request) {
 	for _, i := range toppings {
 		priceToppings += i.Price
 	}
-	var subTotal = request.Qty * (product.Price + priceToppings)
+
+	var Total = 1 * (product.Price + priceToppings)
 
 	dataOrder := models.Order{
-		Qty:       request.Qty,
+		Qty:       1,
 		BuyerID:   buyerID,
 		ProductID: product.ID,
 		Topping:   toppings,
-		Price:     subTotal,
+		Total:     	Total,
 	}
 
 	order, err := h.OrderRepository.AddOrder(dataOrder)
@@ -144,17 +145,25 @@ func (h *handlerOrder) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// request := new(orderdto.UpdateOrder)
-	qty, _ := strconv.Atoi(r.FormValue("qty"))
-	request := orderdto.CreateOrder {
-		Qty:       qty,
-	}
+	request := new(orderdto.CreateOrder)
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+    	response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
+    	json.NewEncoder(w).Encode(response)
+    	return
+  	}
 
 	order, _ := h.OrderRepository.GetOrder(id)
 
+	totalpcs := order.Total/order.Qty
+
 	order.Qty = request.Qty
 
+	order.Total = totalpcs * order.Qty
+
 	order, err := h.OrderRepository.UpdateOrder(order)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
@@ -182,6 +191,7 @@ func (h *handlerOrder) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
 	order, err := h.OrderRepository.GetOrder(id)
+
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		response := dto.ErrorResult{Code: http.StatusBadRequest, Message: err.Error()}
@@ -190,13 +200,16 @@ func (h *handlerOrder) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data, err := h.OrderRepository.DeleteOrder(order)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
 	dataDetele := data.ID
+	
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: dataDetele}
 	json.NewEncoder(w).Encode(response)
