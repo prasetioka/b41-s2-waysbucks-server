@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"os"
 	dto "waysbucks-api/dto/result"
 	usersdto "waysbucks-api/dto/users"
 	"waysbucks-api/models"
@@ -40,6 +41,10 @@ func (h *handlerUser) FindUsers(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(err.Error())
 	}
 
+	for i, p := range users {
+		users[i].Image = os.Getenv("PATH_FILE") + p.Image
+	}
+
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: users}
 	json.NewEncoder(w).Encode(response)
@@ -51,10 +56,10 @@ func (h *handlerUser) GetUser(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
 	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
-	userRole := userInfo["role"]
+	// userRole := userInfo["role"]
 	userID := int(userInfo["id"].(float64))
 
-	if userID != id && userRole != "admin" {
+	if userID != id {
 		w.WriteHeader(http.StatusUnauthorized)
 		response := dto.ErrorResult{Code: http.StatusUnauthorized, Message: "Please login first!"}
 		json.NewEncoder(w).Encode(response)
@@ -68,6 +73,8 @@ func (h *handlerUser) GetUser(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	user.Image = os.Getenv("PATH_FILE") + user.Image
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: convertResponse(user)}
@@ -130,6 +137,8 @@ func (h *handlerUser) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	data.Image = os.Getenv("PATH_FILE") + data.Image
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Status: "success", Data: convertResponse(data)}
